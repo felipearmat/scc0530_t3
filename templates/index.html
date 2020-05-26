@@ -1,0 +1,51 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <title>
+      {% block head_title %}
+        SCC0530 - Inteligência Artificial
+      {% endblock %}
+    </title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    {% block head_base %}
+      <!-- Load polyfills to support older browsers -->
+      <script src="//polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver" crossorigin="anonymous"></script>
+      <!-- Fonts Awesome -->
+      <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js" integrity="sha384-kW+oWsYx3YpxvjtZjFXqazFpA7UP/MbiY4jvs+RWZo2+N94PFZ36T6TFkc9O3qoB" crossorigin="anonymous"></script>
+    {% endblock %}
+    {% block preload %}
+      <link href="/static/css/app.css" rel="preload" as="style">
+      <link href="/static/css/chunk-vendors.css" rel="preload" as="style">
+      <link href="/static/js/app.js" rel="preload" as="script">
+      <link href="/static/js/chunk-vendors.js" rel="preload" as="script">
+    {% endblock %}
+    {% block head_css %}
+      <link rel="stylesheet" href="{% static 'css/chunk-vendors.css' %}">
+      <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    {% endblock %}
+  </head>
+  <body>
+    {% block body_base %}
+      <div id="app"></div>
+    {% endblock %}
+    {% block body_end %}
+      <!-- Popper.js -->
+      <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+      <script type="text/javascript" src="{% static 'js/chunk-vendors.js' %}"></script>
+      <script type="text/javascript" src="{% static 'js/app.js' %}"></script>
+      <script type="text/javascript">
+        // Inicializando App Vue
+        appVue.init(
+          '#app',
+          {
+            API_ARQUIVO: "{% url 'api:mapa_arquivo' %}",
+            API_BUSCA: "{% url 'api:busca_mapa' %}"
+          }
+        );
+      </script>
+    {% endblock %}
+  </body>
+</html>
