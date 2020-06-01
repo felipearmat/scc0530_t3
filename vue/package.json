@@ -8,7 +8,8 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production vue-cli-service build",
     "start": "cross-env NODE_ENV=development vue-cli-service build --watch",
-    "test": "cross-env NODE_ENV=test vue-cli-service test:unit --interactive false --require tests/setup.js \"tests/**/*.test.js\"",
+    "test:custom": "cross-env NODE_ENV=test vue-cli-service test:unit --interactive false --require tests/setup.js",
+    "test": "npm run test:custom -- \"tests/**/*.test.js\"",
     "test:watch": "npm run test -- --watch"
   },
   "dependencies": {

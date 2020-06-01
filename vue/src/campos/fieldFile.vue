@@ -162,7 +162,7 @@ export default {
       return data
     },
     scopedValue: {
-      get () { return this.value },
+      get () { return this.value ? this.value : [] },
       set (scopedValue) { this.$emit('input', scopedValue) }
     }
   },

@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import copy
-from typing import Callable
+import time
+from typing import Callable, Optional
 from random import sample # Retorna uma amostra da lista passada com os elementos ordenados aleatoriamente
 
 ######## Renderização da página/template ######################################
@@ -46,10 +47,14 @@ def distancia_ponto_objetivos(ponto:list, objetivos:list):
         vetor_distancias.append(distancia_pontos(ponto, objetivo))
     return min(vetor_distancias)
 
-def busca_profundidade(mapa:dict):
+# Para melhor clareza informamos os tipos na assinatura da função, fica mais
+# claro também informarmos quais parâmetros são opcionais em sua chamada
+def busca_profundidade(mapa:dict, visitados:Optional[list] = None):
     # OBS: Utilizamos o método iterativo de busca por este possívelmente
     # alocar uma quantidade menor de memória que o método recursivo
-    visitados = []
+    # OBS2: Nunca se deve atribuir um valor opcional como uma lista ou objeto, pois isso cria
+    # uma falha de segurança. Por isso atribuímos None e então checamos no código seu valor
+    visitados = [] if not visitados else copy.deepcopy(visitados)
     caminho = []
     nos = sample(mapa['origem'], len(mapa['origem']))
     while nos:
@@ -147,12 +152,61 @@ def busca_a(mapa:dict):
 
     return algoritmo_bf(mapa, funcao_custo)
 
-def hill_climbing(mapa:dict):
-    # O método hill_climbing (estocástico) analisa a cada passo se teremos melhora com relação
-    # ao objetivo ao seguir uma possível rota, se não houver melhora o algoritmo é terminado.
-    vetor_inicial, visitados = busca_profundidade(mapa)
+def hill_climbing_aux(vetor_inicial:list, mapa:dict, total_visitados:int):
+    # Começamos fazendo uma cópia do vetor inicial para evitar alterá-lo (Mutabilidade sucks!)
+    caminho = vetor_inicial.copy()
+    # Fazemos uma cópia da origem do mapa para evitar alterá-la posteriormente
+    mapa_local = {'origem': mapa['origem'].copy(),
+                  'matriz': mapa['matriz'],
+                  'objetivo': mapa['objetivo']}
+    # Fazemos o "for" com relação ao índices do vetor caminho, já que este terá
+    # seus itens modificados ao longo do algoritmo. Utilizando apenas os índices
+    # estaremos sempre na posição esperada, não importando os itens do vetor.
+    for index in range(len(caminho) - 1):
+        atual = caminho[index]
+        proximo = caminho[index + 1]
+        # Pegamos o iten atual do caminho e o próximo item
+        # Verificamos se o próximo ponto é o objetivo (caso de parada do algoritmo)
+        if proximo in mapa_local['objetivo']:
+            break
+        # Assumimos que o melhor caminho é o próximo obtido e verificamos se isso é verdade
+        melhor = proximo
+        vizinhos = obtem_vizinhos(mapa_local['matriz'], atual, caminho)
+        dist_proximo = distancia_ponto_objetivos(proximo, mapa_local['objetivo'])
+        for vizinho in vizinhos:
+            dist_vizinho = distancia_ponto_objetivos(vizinho, mapa_local['objetivo'])
+            # Se a distância do vizinho for menor que a do melhor ponto, substituímos
+            melhor = vizinho if dist_vizinho <= dist_proximo else melhor
+        # Se algum dos vizinhos for melhor que o ponto inicial
+        if melhor != proximo:
+            # Guardamos o caminho até esse ponto
+            caminho_ate_aqui = caminho[:(index + 1)]
+            # Alteramos a origem do mapa para ser o melhor ponto encontrado
+            mapa_local['origem'] = [melhor]
+            # Recalculamos o caminho partindo do ponto que consideramos melhor
+            novo_caminho, visitados = busca_profundidade(mapa_local, caminho_ate_aqui)
+            total_visitados += visitados
+            # Se um novo caminho for obtido, fazemos a comparação de tamanhos
+            if novo_caminho:
+                novo_caminho = caminho_ate_aqui + novo_caminho
+                # Se o tamanho do novo caminho for menor que
+                # o tamanho do caminho atual, fazemos a troca
+                caminho = novo_caminho if len(novo_caminho) < len(caminho) else caminho
+    return [caminho, total_visitados]
 
-    return busca_profundidade(mapa)
+def hill_climbing(mapa:dict):
+    # O método hill_climbing é um método iterativo que pode ser implementado de várias formas, para este
+    # trabalho sa implementação seguirá da seguinte forma:
+    # - Obtém-se uma solução inicial utilizando a busca em profundidade
+    # - Analisa-se a solução em cada ponto de decisão, se houver um ponto onde outro caminho tem potencial
+    #   para de ser uma solução melhor tenta se criar um novo caminho a partir deste ponto
+    # - Se for criado um novo caminho, comparamos esta nova solução com a solução anterior, se a nova
+    #   solução for melhor descartamos a antiga, caso contrário descartamos a nova. Se nenhum caminho
+    #   foi gerado, mantemos a solução atual
+    # - Seguimos avaliando o caminho até o próximo ponto de decisão e repetimos o segundo passo, se não
+    #   houver mais nenhum ponto de decisão, terminamos o algoritmo
+    vetor_inicial, visitados = busca_profundidade(mapa)
+    return hill_climbing_aux(vetor_inicial, mapa, visitados)
 
 ######## API que faz o parse do arquivo #######################################
 class APIMapaArquivo(APIView):
@@ -229,17 +283,19 @@ class APIBuscaMapa(APIView):
                 status=status.HTTP_400_BAD_REQUEST)
 
         vetor = []
+        funcoes = {'busca_profundidade': busca_profundidade,
+                   'busca_largura': busca_largura,
+                   'best_first': best_first,
+                   'busca_a': busca_a,
+                   'hill_climbing': hill_climbing}
 
-        if _metodo == 'busca_profundidade':
-            vetor, visitados = busca_profundidade(mapa)
-        elif _metodo == 'busca_largura':
-            vetor, visitados = busca_largura(mapa)
-        elif _metodo == 'best_first':
-            vetor, visitados = best_first(mapa)
-        elif _metodo == 'busca_a':
-            vetor, visitados = busca_a(mapa)
-        elif _metodo == 'hill_climbing':
-            vetor, visitados = hill_climbing(mapa)
+        # * 1000 converte os segundos em milisegundos
+        inicio = time.monotonic() * 1000
+        vetor, visitados = funcoes.get(_metodo)(mapa)
+        tempo = time.monotonic() * 1000 - inicio
 
-        return Response({'resposta': {'tipo':_metodo, 'vetor': vetor, 'visitados': visitados}},
+        return Response({'resposta': {'tipo':_metodo,
+                                      'vetor': vetor,
+                                      'visitados': visitados,
+                                      'tempo': tempo}},
                         status=status.HTTP_200_OK)

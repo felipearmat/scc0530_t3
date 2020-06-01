@@ -17,3 +17,13 @@ module.exports = {
     }
   }
 }
+
+if (process.env.NODE_ENV === 'production') {
+  module.exports.productionSourceMap = false
+}
+
+if (process.env.NODE_ENV === 'test') {
+  module.exports.productionSourceMap = false
+  // Let compiler set the output
+  delete module.exports.configureWebpack.output
+}

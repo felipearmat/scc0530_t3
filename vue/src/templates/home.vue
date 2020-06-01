@@ -52,13 +52,26 @@
                 :url="urlBusca"
                 :value="mapa"
                 :parameters="{ metodo: chave }"
-                class="pr-3 pl-3 pt-2 pb-2 mt-4 mb-4"
+                class="pr-3 pl-3 pt-2 pb-2 mt-4 mb-2"
                 variant="info"
                 size="sm"
                 @resolved="trataPostSolucao($event)"
               >
                 {{ chave }}
               </app-post>
+              <!-- <br>
+              <app-post
+                :id="'botao_' + chave"
+                :url="urlBusca"
+                :value="mapa"
+                :parameters="{ metodo: chave, vezes: 100 }"
+                class="pr-3 pl-3 pt-2 pb-2 mt-2 mb-4"
+                variant="info"
+                size="sm"
+                @resolved="trataPostSolucao($event)"
+              >
+                {{ chave + ' * 100' }}
+              </app-post> -->
             </div>
             <div class="col-6">
               <table
@@ -67,16 +80,22 @@
               >
                 <tbody>
                   <tr>
-                    <td class="align-middle">
+                    <td class="align-middle pt-2 pb-2">
                       <b-form-checkbox
                         :id="'checkbox_' + chave"
                         v-model="item.mostrar"
                       >
                         Mostrar caminho
                       </b-form-checkbox>
-                      <span>Nº de visitados: {{ item.visitados }}</span>
-                      <br>
                       <span>Tamanho do caminho: {{ item.vetor.length }}</span>
+                      <br>
+                      <span>Tempo (ms): {{ item.tempos[item.tempos.length - 1] }}</span>
+                      <br>
+                      <span>Nº de testes: {{ item.visitados.length }}</span>
+                      <br>
+                      <span>Média dos caminhos: {{ mediaVetor(item.caminhos) }}</span>
+                      <br>
+                      <span>Média dos tempos (ms): {{ mediaVetor(item.tempos) }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -97,7 +116,9 @@
             >
               <template v-slot:cell()="data">
                 <div :class="defineClasse(data.value, data.index, data.field.label)">
-                  {{ data.value }}
+                  <span :title="`[${data.index}, ${data.field.label}]`">
+                    {{ data.value }}
+                  </span>
                 </div>
               </template>
             </b-table>
@@ -132,27 +153,37 @@ export default {
         busca_profundidade: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         },
         busca_largura: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         },
         best_first: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         },
         busca_a: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         },
         hill_climbing: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         }
       },
       erros: []
@@ -185,27 +216,37 @@ export default {
         busca_profundidade: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         },
         busca_largura: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         },
         best_first: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         },
         busca_a: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         },
         hill_climbing: {
           mostrar: false,
           vetor: [],
-          visitados: null
+          caminhos: [],
+          visitados: [],
+          tempos: []
         }
       }
       this.erros = []
@@ -234,10 +275,21 @@ export default {
       } else if (_resp && _resp.resposta && _resp.resposta.tipo) {
         var _resposta = _resp.resposta
         this.solucao[_resposta.tipo].vetor = _resposta.vetor
-        this.solucao[_resposta.tipo].visitados = _resposta.visitados
+        var tempoFormatado = Number(Number(_resposta.tempo).toFixed(6))
+        this.solucao[_resposta.tipo].tempos.push(tempoFormatado)
+        this.solucao[_resposta.tipo].caminhos.push(_resposta.vetor.length)
+        this.solucao[_resposta.tipo].visitados.push(_resposta.visitados)
       } else {
         this.errosGravame = ['Ocorreu um erro desconhecido. Atualize a página!']
       }
+    },
+    mediaVetor (vetor) {
+      var soma = vetor.reduce((soma, item) => {
+        soma += item
+        return soma
+      }, 0)
+      var qnt = vetor.length
+      return (soma / qnt).toFixed(2)
     }
   }
 }

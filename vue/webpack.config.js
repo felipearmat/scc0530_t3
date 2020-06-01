@@ -33,21 +33,5 @@ module.exports = {
     splitChunks: {
       chunks: 'all'
     },
-  },
-  devtool: '#eval-source-map'
-}
-
-if (process.env.NODE_ENV === 'production') {
-    module.exports.devtool = '#source-map'
-}
-
-if (process.env.NODE_ENV === 'test') {
-  module.exports.devtool = 'inline-cheap-module-source-map'
-  // Let compiler set the output
-  delete module.exports.output
-  // Use absolute paths in sourcemaps (important for debugging via IDE)
-  module.exports.output = {
-    devtoolModuleFilenameTemplate: '[absolute-resource-path]',
-    devtoolFallbackModuleFilenameTemplate: '[absolute-resource-path]?[hash]'
   }
 }
