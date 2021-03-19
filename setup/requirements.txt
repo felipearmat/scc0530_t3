@@ -1,6 +1,6 @@
 # Dependencias base
 django==3.0.6
-djangorestframework==3.11
+djangorestframework==3.11.2
 Pillow==7.1.2
 gunicorn==20.0.4
 environ==1.0
